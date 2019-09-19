@@ -1,0 +1,85 @@
+- name: '[APACHE] -  Required and recommended packages are installed.'
+  notify: start apache
+  package: name={{ item }} state=present
+  with_items:
+  - apache2
+  - smbclient
+  - libapache2-mod-php{{ php_ver }}
+  - php{{ php_ver }}-ldap
+  - php{{ php_ver }}-imap
+  - php{{ php_ver }}-gd
+  - php{{ php_ver }}-json
+  - php{{ php_ver }}-curl
+  - php{{ php_ver }}-intl
+- name: '[APACHE] -  Some other packages are installed.'
+  package: name={{ item }} state=present
+  with_items: '{{ php_pkg_spe }}'
+- name: '[APACHE] -  APCu is installed.'
+  package: name={{ php_pkg_apcu }} state=present
+  when: ansible_distribution_release not in [ "trusty" ]
+- block:
+  - apt_repository:
+      repo: deb http://fr.archive.ubuntu.com/ubuntu/ trusty-backports main restricted
+        universe multiverse
+      state: present
+      update_cache: true
+    ignore_errors: true
+    name: '[APACHE] -  Configure trusty backports.'
+  - apt: name={{ php_pkg_apcu }} state=latest default_release=trusty-backports
+    name: '[APACHE] -  Install APCu from backports.'
+  when: ansible_distribution_release == "trusty"
+- lineinfile:
+    dest: '{{ php_dir }}/cli/php.ini'
+    insertbefore: ^; End:$
+    line: apc.enable_cli = 1
+    state: present
+  name: '[APACHE] -  enable APC for php CLI'
+- lineinfile:
+    backrefs: true
+    dest: '{{ php_dir }}/apache2/php.ini'
+    line: '{{ item.line }}'
+    regexp: '{{ item.regexp }}'
+    state: present
+  name: '[APACHE] -  enable PHP OPcache for php.ini'
+  notify: reload apache
+  with_items:
+  - line: opcache.enable=1
+    regexp: opcache.enable=0
+  - line: opcache.enable_cli=1
+    regexp: opcache.enable_cli
+  - line: opcache.interned_strings_buffer=8
+    regexp: opcache.interned_strings_buffer
+  - line: opcache.max_accelerated_files=10000
+    regexp: opcache.max_accelerated_files
+  - line: opcache.memory_consumption=128
+    regexp: opcache.memory_consumption
+  - line: opcache.save_comments=1
+    regexp: opcache.save_comments
+  - line: opcache.revalidate_freq=1
+    regexp: opcache.revalidate_freq
+- apache2_module: state=present name={{ item }}
+  name: '[APACHE] -  Required Apache2 modules are enabled'
+  notify: restart apache
+  with_items:
+  - rewrite
+  - headers
+  - env
+  - dir
+  - mime
+- apache2_module: state=present name={{ item }}
+  name: '[APACHE] -  Ssl Apache2 module is enabled'
+  notify: restart apache
+  when: nextcloud_install_tls
+  with_items:
+  - ssl
+- name: '[APACHE] -  generate Nextcloud configuration for apache'
+  notify: reload apache
+  template:
+    dest: /etc/apache2/sites-available/nc_{{ nextcloud_instance_name }}.conf
+    src: '{{nextcloud_websrv_template}}'
+- file:
+    path: /etc/apache2/sites-enabled/nc_{{ nextcloud_instance_name }}.conf
+    src: /etc/apache2/sites-available/nc_{{ nextcloud_instance_name }}.conf
+    state: link
+  name: '[APACHE] -  Enable Nextcloud site in apache conf'
+  notify: reload apache

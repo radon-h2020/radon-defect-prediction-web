@@ -23,17 +23,18 @@
     }
 
     var startUpload = function(files) {
+
         initializeProgressbar()
         let step = parseFloat(100 / files.length)
         
         for(let i=0; i < files.length; i++){
             
             if (files[i]) { 
+                
                 var reader = new FileReader();
                 reader.readAsText(files[i], "UTF-8");
-
                 reader.onload = function (evt) {
-                  
+                   
                     $.ajax({
                         url: 'http://localhost:5000/api/classification/classify',      //TODO change address
                         method:'POST',
@@ -43,41 +44,53 @@
                         data: evt.target.result.toString(),
                     })
                     .done(function(response) {
+
+                        if($("#btn-remove-all-processed").is( ":hidden" )){
+                            $("#btn-remove-all-processed").show()
+                        }
+
                         uploadProgressbar(step)
                         let warningOrSuccess = response.defective ? 'warning' : 'success' 
                         let alert = response.defective ? 'alert-warning' : 'alert-success' 
                         
                         let a = $('<a href="#" class="list-group-item list-group-item-'+warningOrSuccess+'"><span class="badge '+ alert + ' pull-right">'+ (++fileCount) +'</span> '+files[i].name+' </a>')
+                        
                         a.data('content', evt.target.result.toString())
+                        a.data('isdefective', response.defective)
                         a.data('metrics', response.metrics)
                         a.click(function(){
-                            console.log(JSON.stringify($(this).data().metrics))
                             
                             $("#predictionInfoModal").modal();
-                            
-                            // Adjust data for table
+                            $("#icon-bomb").hide();
 
+                            if($(this).data().isdefective){
+                                $("#icon-bomb").show();
+                            }
                             
                             // Populate table
-                            var table = $('#dataTable').DataTable({
-                                data: setupDataForTable($(this).data().metrics),
-                                columns : [{
-                                    "data" : "name"
-                                }, {
-                                    "data" : "value"
-                                },{
-                                    "data" : null, 
-                                    render: function ( data, type, row ) {
-                                        return '<input type="checkbox"></input>'
-                                    }
-                                }] 
-                            });
-
-                            $("#file-content").html($(this).data().content);
+                            if ($.fn.dataTable.isDataTable('#dataTable')) {
+                                $('#dataTable').DataTable();
+                            }
+                            else {
+                                $('#dataTable').DataTable({
+                                    data: setupDataForTable($(this).data().metrics),
+                                    columns : [{
+                                        "data" : "name"
+                                    }, {
+                                        "data" : "value"
+                                    },{
+                                        "data" : null, 
+                                        render: function ( data, type, row ) {
+                                            return '<input type="checkbox"></input>'
+                                        }
+                                    }] 
+                                });
+                            }
                             
+                            $("#file-content").html($(this).data().content);
                         });
 
-                        let status = $('<span class="badge '+ alert +' pull-right" style="float: right; margin-right: 10px"> Defective: '+ response.defective.toString().toUpperCase()+'</span> ')
+                        let status = $('<span class="badge '+ alert +' pull-right" style="float: right; margin-right: 10px"> '+ (response.defective ? 'Defective' : 'Defect free') + '</span>')
                         let x = $('<i class="fas fa-trash" style="text-align: center; float: right"></i>')
                         x.click(function(e){
                             a.remove();
@@ -87,6 +100,11 @@
                         $("#processed-files-list").append(a)                        
                     })
                     .fail(function () {
+                        
+                        if($("#btn-remove-all-failed").is( ":hidden" )){
+                            $("#btn-remove-all-failed").show()
+                        }
+
                         uploadProgressbar((i+1)*step)
                         
                         let a = $('<a href="#" class="list-group-item list-group-item-danger"><span class="badge alert-danger pull-right">'+ (++fileCount) +'</span> '+files[i].name+' </a>')
@@ -95,7 +113,8 @@
                             a.remove();
                         });
 
-                        a.append(x)
+                        let status = $('<span class="badge alert-danger pull-right" style="float: right; margin-right: 10px"> Failed </span>')
+                        a.append(x, status)
                         $("#processed-files-list").append(a)
                     }) 
                 }
@@ -109,7 +128,8 @@
                         a.remove();
                     });
 
-                    a.append(x)
+                    let status = $('<span class="badge alert-danger pull-right" style="float: right; margin-right: 10px"> Error loading</span>')
+                    a.append(x, status)
                     $("#processed-files-list").append(a)
                 }
             }

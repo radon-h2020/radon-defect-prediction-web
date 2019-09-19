@@ -10,7 +10,7 @@
   <meta name="author" content="">
 
   <title>RADON Defect Predictor Admin - Dashboard</title>
-
+   
   <!-- Custom fonts for this template-->
   <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
 
@@ -115,10 +115,10 @@
                 </div>
       
                 <!-- Upload Finished -->
-                <div class="js-upload-finished">
+                <div class="js-upload-finished" id="processed-files-header">
                   <h3>Processed files</h3>
-                  <div class="list-group" id="processed-files-list">
-                  </div>
+                  <a id="btn-remove-all-processed" class="btn btn-danger btn-icon-split mr-1" href="#" style="display: none; margin-bottom: 5px;" onclick=removeAllProcessed()> <span class="icon text-white-50"><i class="fas fa-trash"></i></span><span class="text"> Remove all </span></a>
+                  <div class="list-group" id="processed-files-list"></div>
                 </div>
               </div>
             </div>
@@ -149,7 +149,7 @@
     <div class="modal-dialog modal-xl" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Prediction details</h5> 
+          <h5 class="modal-title" >Prediction details <i class="fas fa-bomb" id="icon-bomb"></i> </h5> 
           <button class="close" type="button" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">×</span>
           </button>
@@ -190,13 +190,14 @@
               <h6 class="m-0 font-weight-bold text-primary">File content</h6>
             </div>
             <div class="card-body">
-                <p id="file-content">Some content</p>
+              <!--<p id="file-content"></p>-->
+              <pre><code id="file-content">This is a snippet</code></pre>
             </div>
           </div>
         </div> <!-- end modal body -->
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-          <a id="btn-update-prediction" href="#" class="btn btn-success btn-icon-split" href="#"> <span class="icon text-white-50"><i class="fas fa-pencil-alt"></i></span><span class="text"> Update</span></a>
+          <a id="btn-update-prediction" class="btn btn-success btn-icon-split" href="#"> <span class="icon text-white-50"><i class="fas fa-pencil-alt"></i></span><span class="text"> Update</span></a>
         </div>
       </div>
     </div>
@@ -228,17 +229,19 @@
   <!-- Core plugin JavaScript-->
   <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 
-  <!-- Page level plugin JavaScript-->
-  <script src="vendor/chart.js/Chart.min.js"></script>
+  <!-- Page level plugin JavaScript for Table-->
   <script src="vendor/datatables/jquery.dataTables.js"></script>
   <script src="vendor/datatables/dataTables.bootstrap4.js"></script>
 
   <!-- Custom scripts for all pages-->
   <script src="js/sb-admin.min.js"></script>
 
-  <!-- Custom scripts to handle upload and prediction-->
-  <script src="js/upload-and-predict.js"></script>
+  <!-- Config -->
+  <script data-main = "config" src = "require.js"></script>
 
+  <!-- Custom scripts to handle upload and prediction -->
+  <script src="js/processing-buttons.js"></script> 
+  <script src="js/upload-and-predict.js"></script> 
 
 </body>
 
