@@ -35,13 +35,15 @@
                 reader.readAsText(files[i], "UTF-8");
                 reader.onload = function (evt) {
                    
+                    let content = evt.target.result.toString()
+
                     $.ajax({
-                        url: 'http://localhost:5000/api/classification/classify',      //TODO change address
+                        url: 'http://giovanni.pink:5555/api/classification/classify',      //TODO change address
                         method:'POST',
                         type:'POST',
                         contentType: 'text/plain',
                         dataType: 'json', // Tell jQuery what kind of response to expect
-                        data: evt.target.result.toString(),
+                        data: content,
                     })
                     .done(function(response) {
 
@@ -50,40 +52,48 @@
                         }
 
                         uploadProgressbar(step)
+
                         let warningOrSuccess = response.defective ? 'warning' : 'success' 
                         let alert = response.defective ? 'alert-warning' : 'alert-success' 
                         
                         let a = $('<a href="#" class="list-group-item list-group-item-'+warningOrSuccess+'"><span class="badge '+ alert + ' pull-right">'+ (++fileCount) +'</span> '+files[i].name+' </a>')
                         
-                        a.data('content', evt.target.result.toString())
+                        a.data('content', content)
                         a.data('isdefective', response.defective)
                         a.data('metrics', response.metrics)
+
                         a.click(function(){
                             
                             $("#predictionInfoModal").modal();
                             $("#icon-bomb").hide();
 
-                            if($(this).data().isdefective){
+                            if($(this).data().isdefective)
                                 $("#icon-bomb").show();
-                            }
                             
                             // Populate table
-                            if ($.fn.dataTable.isDataTable('#dataTable')) {
+                            if ($.fn.dataTable != undefined && $.fn.dataTable.isDataTable('#dataTable')) 
                                 $('#dataTable').DataTable();
-                            }
                             else {
+                                
+                                let metrics = []
+                                for(var k in $(this).data().metrics){
+                                    
+                                    let value = $(this).data().metrics[k]
+                                    
+                                    if(value > 0)
+                                        metrics.push({
+                                            'metric': k,
+                                            'value': value
+                                        })
+                                }
+
                                 $('#dataTable').DataTable({
-                                    data: setupDataForTable($(this).data().metrics),
-                                    columns : [{
-                                        "data" : "name"
-                                    }, {
-                                        "data" : "value"
-                                    },{
-                                        "data" : null, 
-                                        render: function ( data, type, row ) {
-                                            return '<input type="checkbox"></input>'
-                                        }
-                                    }] 
+                                    //data: setupDataForTable(metrics),
+                                    data: metrics,
+                                    columns : [
+                                        {data : 'metric'}, 
+                                        {data : "value"}
+                                    ]
                                 });
                             }
                             
